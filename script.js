@@ -336,6 +336,7 @@ export class BrainvitaGame {
         document.getElementById('playBtn').disabled = true;
         document.getElementById('pauseBtn').disabled = false;
         
+        this.isPlayback = true;  // Set playback mode when starting
         const speed = 6 - parseInt(document.getElementById('speedRange').value); // Invert scale for intuitive speed control
         this.playbackInterval = setInterval(() => {
             if (!this.stepSolution()) {
@@ -355,6 +356,7 @@ export class BrainvitaGame {
             this.playbackInterval = null;
             document.getElementById('playBtn').disabled = false;
             document.getElementById('pauseBtn').disabled = true;
+            this.isPlayback = false;  // Clear playback mode when paused
 
             trackEvent('pause_solution', {
                 'event_category': 'Solutions',
@@ -365,13 +367,12 @@ export class BrainvitaGame {
 
     stepSolution() {
         if (!this.currentSolution || this.currentMoveIndex >= this.currentSolution.moves.length) {
+            this.isPlayback = false;  // Clear playback mode when done
             return false;
         }
 
         const move = this.currentSolution.moves[this.currentMoveIndex];
-        this.isPlayback = true;
         this.makeMove(move.from[0], move.from[1], move.to[0], move.to[1]);
-        this.isPlayback = false;
         this.currentMoveIndex++;
 
         if (this.currentMoveIndex >= this.currentSolution.moves.length) {
@@ -379,13 +380,14 @@ export class BrainvitaGame {
                 'event_category': 'Solutions',
                 'event_label': `Completed ${this.currentSolution.name}`
             });
+            this.isPlayback = false;  // Clear playback mode when done
             return false;
         }
         return true;
     }
 
     resetSolution() {
-        this.pauseSolution();
+        this.pauseSolution();  // This will also clear isPlayback
         this.resetGame();
         this.currentMoveIndex = 0;
         document.getElementById('playBtn').disabled = false;

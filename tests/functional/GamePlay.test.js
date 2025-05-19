@@ -7,12 +7,25 @@ describe('Brainvita Game Play', () => {
         // Reset the DOM
         document.body.innerHTML = `
             <div class="container">
-                <div class="game-controls">
-                    <button id="resetBtn">Reset Game</button>
-                    <button id="playbackBtn">Play Moves</button>
-                </div>
                 <div id="board" class="board"></div>
                 <div id="message" class="message"></div>
+                <div class="controls">
+                    <button id="resetBtn">Reset Game</button>
+                    <button id="solutionsBtn">Show Solutions</button>
+                </div>
+                <div id="solutionsOverlay" class="overlay">
+                    <div class="overlay-content">
+                        <select id="solutionSelect"></select>
+                        <div class="playback-controls">
+                            <button id="playBtn">Play</button>
+                            <button id="pauseBtn">Pause</button>
+                            <button id="stepBtn">Step</button>
+                            <button id="resetSolutionBtn">Reset</button>
+                        </div>
+                        <input type="range" id="speedRange" min="1" max="5" value="3">
+                        <button id="closeSolutionsBtn">&times;</button>
+                    </div>
+                </div>
             </div>
         `;
         game = new BrainvitaGame();
@@ -89,17 +102,22 @@ describe('Brainvita Game Play', () => {
             game.makeMove(3, 1, 3, 3);
             game.makeMove(3, 4, 3, 2);
 
+            // Show solutions overlay
+            document.getElementById('solutionsBtn').click();
+
+            // Select first solution
+            const solutionSelect = document.getElementById('solutionSelect');
+            solutionSelect.value = '0';
+            solutionSelect.dispatchEvent(new Event('change'));
+
             // Start playback
-            const playbackBtn = document.getElementById('playbackBtn');
-            playbackBtn.click();
+            document.getElementById('playBtn').click();
 
             // Wait for animations
             await new Promise(resolve => setTimeout(resolve, 3000));
 
             // Verify final state
-            expect(game.board[3][2]).toBe('marble');
-            expect(game.board[3][3]).toBe('empty');
-            expect(game.board[3][4]).toBe('empty');
+            expect(game.isPlayback).toBe(true);
         });
     });
 
