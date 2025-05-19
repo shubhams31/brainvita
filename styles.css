@@ -1,0 +1,123 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #f0f0f0;
+}
+
+.container {
+    text-align: center;
+}
+
+h1 {
+    margin-bottom: 20px;
+    color: #333;
+}
+
+.game-controls {
+    margin-bottom: 20px;
+}
+
+button {
+    padding: 10px 20px;
+    margin: 0 10px;
+    font-size: 16px;
+    cursor: pointer;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #45a049;
+}
+
+.board {
+    display: grid;
+    grid-template-columns: repeat(7, 60px);
+    grid-template-rows: repeat(7, 60px);
+    gap: 5px;
+    padding: 20px;
+    background-color: #8b4513;
+    border-radius: 10px;
+    margin: 0 auto;
+}
+
+.cell {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+    position: relative;
+}
+
+.cell.invalid {
+    background-color: transparent;
+    cursor: default;
+}
+
+.cell.empty {
+    background-color: #654321;
+}
+
+.cell.marble {
+    background-color: #f0d500;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.3);
+}
+
+.cell.selected {
+    background-color: #ff9900;
+}
+
+.cell.valid-move {
+    background-color: #90EE90;
+}
+
+.message {
+    margin-top: 20px;
+    font-size: 20px;
+    font-weight: bold;
+    color: #333;
+    height: 30px;
+}
+
+.marble-animation {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background-color: #f0d500;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.3);
+    pointer-events: none;
+    z-index: 100;
+    transition: all 0.5s ease-in-out;
+}
+
+.playback-source {
+    background-color: #ff9900 !important;
+}
+
+.playback-target {
+    background-color: #90EE90 !important;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+.pulse {
+    animation: pulse 0.5s ease-in-out;
+} 
