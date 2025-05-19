@@ -11,45 +11,46 @@
         window.gameConfig = config;
     </script>
     <!-- Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js" id="ga-script"></script>
-    <script type="module">
-        // Initialize analytics after config is loaded
-        window.addEventListener('load', () => {
-            if (window.gameConfig && window.gameConfig.analytics) {
-                const script = document.getElementById('ga-script');
-                script.src += `?id=${window.gameConfig.analytics.trackingId}`;
-                
-                window.dataLayer = window.dataLayer || [];
-                function gtag(){dataLayer.push(arguments);}
-                gtag('js', new Date());
-                gtag('config', window.gameConfig.analytics.trackingId, {
-                    user_id: window.gameConfig.analytics.userEmail
-                });
-            }
-        });
-
-        // Global error handling
-        window.onerror = function(msg, url, lineNo, columnNo, error) {
-            if (window.gtag) {
-                gtag('event', 'error', {
-                    'event_category': 'Error',
-                    'event_label': `${msg} at ${url}:${lineNo}:${columnNo}`,
-                    'value': error ? error.stack : 'No stack trace'
-                });
-            }
-            return false;
-        };
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-N3WL64R033"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-N3WL64R033');
     </script>
 </head>
 <body>
     <div class="container">
         <h1>Brainvita</h1>
-        <div class="game-controls">
-            <button id="resetBtn">Reset Game</button>
-            <button id="playbackBtn">Play Moves</button>
-        </div>
         <div id="board" class="board"></div>
         <div id="message" class="message"></div>
+        <div class="controls">
+            <button id="resetBtn">Reset Game</button>
+            <button id="solutionsBtn">Show Solutions</button>
+        </div>
+        
+        <!-- Solutions Overlay -->
+        <div id="solutionsOverlay" class="overlay">
+            <div class="overlay-content">
+                <h2>Solutions</h2>
+                <div class="solution-controls">
+                    <select id="solutionSelect">
+                        <option value="">Select a solution...</option>
+                    </select>
+                    <div class="playback-controls">
+                        <button id="playBtn" disabled>Play</button>
+                        <button id="pauseBtn" disabled>Pause</button>
+                        <button id="stepBtn" disabled>Step</button>
+                        <button id="resetSolutionBtn" disabled>Reset</button>
+                    </div>
+                    <div class="speed-control">
+                        <label for="speedRange">Animation Speed:</label>
+                        <input type="range" id="speedRange" min="1" max="5" value="3">
+                    </div>
+                </div>
+                <button id="closeSolutionsBtn" class="close-btn">&times;</button>
+            </div>
+        </div>
     </div>
     <script type="module" src="script.js"></script>
 </body>

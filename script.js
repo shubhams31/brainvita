@@ -1,3 +1,5 @@
+import { solutions } from './solutions.js';
+
 // Helper function for analytics
 function trackEvent(eventName, params) {
     if (typeof gtag !== 'undefined' && window.gameConfig && window.gameConfig.analytics) {
@@ -15,7 +17,11 @@ export class BrainvitaGame {
         this.moveHistory = [];
         this.validMoves = [];
         this.isPlayback = false;
+        this.currentSolution = null;
+        this.currentMoveIndex = 0;
+        this.playbackInterval = null;
         this.initializeGame();
+        this.initializeSolutionPlayer();
         
         // Log game start
         trackEvent('game_start', {
@@ -74,7 +80,14 @@ export class BrainvitaGame {
         });
 
         document.getElementById('resetBtn').addEventListener('click', () => this.resetGame());
-        document.getElementById('playbackBtn').addEventListener('click', () => this.playbackMoves());
+        document.getElementById('solutionsBtn').addEventListener('click', () => this.showSolutionsOverlay());
+        document.getElementById('closeSolutionsBtn').addEventListener('click', () => this.hideSolutionsOverlay());
+        document.getElementById('solutionSelect').addEventListener('change', (e) => this.handleSolutionSelect(e));
+        document.getElementById('playBtn').addEventListener('click', () => this.playSolution());
+        document.getElementById('pauseBtn').addEventListener('click', () => this.pauseSolution());
+        document.getElementById('stepBtn').addEventListener('click', () => this.stepSolution());
+        document.getElementById('resetSolutionBtn').addEventListener('click', () => this.resetSolution());
+        document.getElementById('speedRange').addEventListener('input', (e) => this.updatePlaybackSpeed(e));
     }
 
     handleCellClick(row, col) {
@@ -271,85 +284,119 @@ export class BrainvitaGame {
         });
     }
 
-    async playbackMoves() {
-        if (this.moveHistory.length === 0) {
-            return;
+    initializeSolutionPlayer() {
+        const select = document.getElementById('solutionSelect');
+        select.innerHTML = '<option value="">Select a solution...</option>';
+        solutions.forEach((solution, index) => {
+            const option = document.createElement('option');
+            option.value = index;
+            option.textContent = solution.name;
+            select.appendChild(option);
+        });
+    }
+
+    showSolutionsOverlay() {
+        document.getElementById('solutionsOverlay').style.display = 'block';
+        trackEvent('show_solutions', {
+            'event_category': 'Solutions',
+            'event_label': 'Solutions overlay opened'
+        });
+    }
+
+    hideSolutionsOverlay() {
+        document.getElementById('solutionsOverlay').style.display = 'none';
+    }
+
+    handleSolutionSelect(event) {
+        const index = event.target.value;
+        if (index === '') {
+            this.currentSolution = null;
+            this.updatePlaybackControls(false);
+        } else {
+            this.currentSolution = solutions[index];
+            this.resetSolution();
+            this.updatePlaybackControls(true);
+            trackEvent('select_solution', {
+                'event_category': 'Solutions',
+                'event_label': `Selected ${this.currentSolution.name}`
+            });
+        }
+    }
+
+    updatePlaybackControls(enabled) {
+        document.getElementById('playBtn').disabled = !enabled;
+        document.getElementById('pauseBtn').disabled = !enabled;
+        document.getElementById('stepBtn').disabled = !enabled;
+        document.getElementById('resetSolutionBtn').disabled = !enabled;
+    }
+
+    playSolution() {
+        if (!this.currentSolution || this.playbackInterval) return;
+        
+        document.getElementById('playBtn').disabled = true;
+        document.getElementById('pauseBtn').disabled = false;
+        
+        const speed = 6 - parseInt(document.getElementById('speedRange').value); // Invert scale for intuitive speed control
+        this.playbackInterval = setInterval(() => {
+            if (!this.stepSolution()) {
+                this.pauseSolution();
+            }
+        }, speed * 500); // Speed ranges from 500ms to 2500ms
+
+        trackEvent('play_solution', {
+            'event_category': 'Solutions',
+            'event_label': `Playing ${this.currentSolution.name}`
+        });
+    }
+
+    pauseSolution() {
+        if (this.playbackInterval) {
+            clearInterval(this.playbackInterval);
+            this.playbackInterval = null;
+            document.getElementById('playBtn').disabled = false;
+            document.getElementById('pauseBtn').disabled = true;
+
+            trackEvent('pause_solution', {
+                'event_category': 'Solutions',
+                'event_label': `Paused at move ${this.currentMoveIndex}`
+            });
+        }
+    }
+
+    stepSolution() {
+        if (!this.currentSolution || this.currentMoveIndex >= this.currentSolution.moves.length) {
+            return false;
         }
 
-        // Log playback start
-        trackEvent('playback_start', {
-            'event_category': 'Game',
-            'event_label': 'Playback started',
-            'value': this.moveHistory.length
-        });
-
+        const move = this.currentSolution.moves[this.currentMoveIndex];
         this.isPlayback = true;
-        const originalBoard = this.board.map(row => [...row]);
-        const originalMoveHistory = [...this.moveHistory];
-        
+        this.makeMove(move.from[0], move.from[1], move.to[0], move.to[1]);
+        this.isPlayback = false;
+        this.currentMoveIndex++;
+
+        if (this.currentMoveIndex >= this.currentSolution.moves.length) {
+            trackEvent('solution_complete', {
+                'event_category': 'Solutions',
+                'event_label': `Completed ${this.currentSolution.name}`
+            });
+            return false;
+        }
+        return true;
+    }
+
+    resetSolution() {
+        this.pauseSolution();
         this.resetGame();
-        
-        try {
-            for (const move of originalMoveHistory) {
-                // Safely get DOM elements
-                const sourceCell = document.querySelector(`[data-row="${move.from.row}"][data-col="${move.from.col}"]`);
-                const targetCell = document.querySelector(`[data-row="${move.to.row}"][data-col="${move.to.col}"]`);
-                const board = document.querySelector('.board');
-                
-                // Only perform DOM operations if elements exist
-                if (sourceCell && targetCell && board) {
-                    sourceCell.classList.add('playback-source');
-                    targetCell.classList.add('playback-target');
-                    
-                    // Create and position the animated marble
-                    const marble = document.createElement('div');
-                    marble.className = 'marble-animation';
-                    board.appendChild(marble);
-                    
-                    // Get positions for animation
-                    const sourceBounds = sourceCell.getBoundingClientRect();
-                    const targetBounds = targetCell.getBoundingClientRect();
-                    const boardBounds = board.getBoundingClientRect();
-                    
-                    // Set initial position
-                    marble.style.left = `${sourceBounds.left - boardBounds.left}px`;
-                    marble.style.top = `${sourceBounds.top - boardBounds.top}px`;
-                    
-                    // Trigger animation
-                    await new Promise(resolve => setTimeout(resolve, 500));
-                    
-                    marble.style.left = `${targetBounds.left - boardBounds.left}px`;
-                    marble.style.top = `${targetBounds.top - boardBounds.top}px`;
-                    
-                    // Wait for animation to complete
-                    await new Promise(resolve => setTimeout(resolve, 500));
-                    
-                    // Remove the animated marble
-                    marble.remove();
-                }
-                
-                // Make the actual move (this updates the game state)
-                this.makeMove(move.from.row, move.from.col, move.to.row, move.to.col);
-                
-                // Only perform DOM operations if elements exist
-                if (sourceCell && targetCell) {
-                    // Add pulse animation to removed marble
-                    const middleRow = (move.from.row + move.to.row) / 2;
-                    const middleCol = (move.from.col + move.to.col) / 2;
-                    const middleCell = document.querySelector(`[data-row="${middleRow}"][data-col="${middleCol}"]`);
-                    
-                    if (middleCell) {
-                        middleCell.classList.add('pulse');
-                        sourceCell.classList.remove('playback-source');
-                        targetCell.classList.remove('playback-target');
-                        
-                        await new Promise(resolve => setTimeout(resolve, 500));
-                        middleCell.classList.remove('pulse');
-                    }
-                }
-            }
-        } finally {
-            this.isPlayback = false;
+        this.currentMoveIndex = 0;
+        document.getElementById('playBtn').disabled = false;
+        document.getElementById('stepBtn').disabled = false;
+        document.getElementById('resetSolutionBtn').disabled = false;
+    }
+
+    updatePlaybackSpeed(event) {
+        if (this.playbackInterval) {
+            this.pauseSolution();
+            this.playSolution();
         }
     }
 
