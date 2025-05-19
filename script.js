@@ -1,3 +1,13 @@
+// Helper function for analytics
+function trackEvent(eventName, params) {
+    if (typeof gtag !== 'undefined' && window.gameConfig && window.gameConfig.analytics) {
+        gtag('event', eventName, {
+            ...params,
+            user_id: window.gameConfig.analytics.userEmail
+        });
+    }
+}
+
 export class BrainvitaGame {
     constructor() {
         this.board = this.createInitialBoard();
@@ -6,6 +16,12 @@ export class BrainvitaGame {
         this.validMoves = [];
         this.isPlayback = false;
         this.initializeGame();
+        
+        // Log game start
+        trackEvent('game_start', {
+            'event_category': 'Game',
+            'event_label': 'New game started'
+        });
     }
 
     createInitialBoard() {
@@ -141,6 +157,13 @@ export class BrainvitaGame {
                 from: { row: fromRow, col: fromCol },
                 to: { row: toRow, col: toCol }
             });
+            
+            // Log move
+            trackEvent('game_move', {
+                'event_category': 'Game',
+                'event_label': `Move from (${fromRow},${fromCol}) to (${toRow},${toCol})`,
+                'value': this.moveHistory.length
+            });
         }
         
         this.createBoardUI();
@@ -240,12 +263,25 @@ export class BrainvitaGame {
         this.validMoves = [];
         this.createBoardUI();
         document.getElementById('message').textContent = '';
+        
+        // Log game reset
+        trackEvent('game_reset', {
+            'event_category': 'Game',
+            'event_label': 'Game reset'
+        });
     }
 
     async playbackMoves() {
         if (this.moveHistory.length === 0) {
             return;
         }
+
+        // Log playback start
+        trackEvent('playback_start', {
+            'event_category': 'Game',
+            'event_label': 'Playback started',
+            'value': this.moveHistory.length
+        });
 
         this.isPlayback = true;
         const originalBoard = this.board.map(row => [...row]);
@@ -319,8 +355,16 @@ export class BrainvitaGame {
 
     checkGameOver() {
         if (this.isGameOver()) {
-            const message = this.hasWon() ? 'Congratulations! You won!' : 'Game Over! No more moves possible.';
+            const hasWon = this.hasWon();
+            const message = hasWon ? 'Congratulations! You won!' : 'Game Over! No more moves possible.';
             document.getElementById('message').textContent = message;
+            
+            // Log game end
+            trackEvent('game_over', {
+                'event_category': 'Game',
+                'event_label': hasWon ? 'Won' : 'Lost',
+                'value': this.moveHistory.length
+            });
         }
     }
 }

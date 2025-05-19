@@ -5,6 +5,41 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Brainvita Game</title>
     <link rel="stylesheet" href="styles.css">
+    <!-- Load configuration -->
+    <script type="module">
+        import { config } from './config.local.js';
+        window.gameConfig = config;
+    </script>
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js" id="ga-script"></script>
+    <script type="module">
+        // Initialize analytics after config is loaded
+        window.addEventListener('load', () => {
+            if (window.gameConfig && window.gameConfig.analytics) {
+                const script = document.getElementById('ga-script');
+                script.src += `?id=${window.gameConfig.analytics.trackingId}`;
+                
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', window.gameConfig.analytics.trackingId, {
+                    user_id: window.gameConfig.analytics.userEmail
+                });
+            }
+        });
+
+        // Global error handling
+        window.onerror = function(msg, url, lineNo, columnNo, error) {
+            if (window.gtag) {
+                gtag('event', 'error', {
+                    'event_category': 'Error',
+                    'event_label': `${msg} at ${url}:${lineNo}:${columnNo}`,
+                    'value': error ? error.stack : 'No stack trace'
+                });
+            }
+            return false;
+        };
+    </script>
 </head>
 <body>
     <div class="container">
@@ -16,6 +51,6 @@
         <div id="board" class="board"></div>
         <div id="message" class="message"></div>
     </div>
-    <script src="script.js"></script>
+    <script type="module" src="script.js"></script>
 </body>
 </html> 
